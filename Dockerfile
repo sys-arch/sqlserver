@@ -4,7 +4,6 @@ FROM mcr.microsoft.com/mssql/server:2019-latest
 # Configura las variables de entorno necesarias
 ENV ACCEPT_EULA=Y
 ENV MSSQL_PID=Express
-ENV SA_PASSWORD=YourStrongPassword!  # Cambia esto por una contraseña segura
 
 # Expone el puerto SQL Server
 EXPOSE 1433
