@@ -6,12 +6,14 @@ ENV ACCEPT_EULA=Y
 ENV MSSQL_PID=Express
 ENV SA_PASSWORD=YourStrongPassword!
 
-# Instala dependencias necesarias para sqlcmd y configuraciones de red
+# Instala dependencias necesarias para sqlcmd
 USER root
 RUN apt-get update && \
     apt-get install -y gnupg curl apt-transport-https && \
     curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
-    curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list | tee /etc/apt/sources.list.d/msprod.list && \
+    # Evitar duplicados eliminando msprod.list si ya existe
+    rm -f /etc/apt/sources.list.d/msprod.list && \
+    echo "deb [arch=amd64,armhf,arm64] https://packages.microsoft.com/ubuntu/20.04/prod focal main" | tee /etc/apt/sources.list.d/msprod.list && \
     apt-get update && \
     apt-get install -y mssql-tools unixodbc-dev && \
     rm -rf /var/lib/apt/lists/* && \
