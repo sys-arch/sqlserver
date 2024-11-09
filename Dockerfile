@@ -6,7 +6,7 @@ ENV ACCEPT_EULA=Y
 ENV MSSQL_PID=Express
 ENV SA_PASSWORD=YourStrongPassword!
 
-# Instala gnupg y sqlcmd, y configura SSL
+# Instala gnupg y sqlcmd
 USER root
 RUN apt-get update && \
     apt-get install -y gnupg gnupg2 gnupg1 curl apt-transport-https && \
@@ -17,30 +17,22 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* && \
     echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
 
-# Configurar SSL para SQL Server
-RUN mkdir -p /etc/ssl/certs && \
-    mkdir -p /etc/ssl/private && \
-    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-    -keyout /etc/ssl/private/sqlserver.key \
-    -out /etc/ssl/certs/sqlserver.crt \
-    -subj "/CN=localhost"
+# Copia el archivo de configuración SQL
+COPY setup.sql /tmp/setup.sql
+RUN chmod 644 /tmp/setup.sql
 
-# Cambiar permisos de los certificados para SQL Server
-RUN chmod 600 /etc/ssl/private/sqlserver.key && \
-    chmod 644 /etc/ssl/certs/sqlserver.crt
+# Cambiar permisos de la carpeta /var/opt/mssql para evitar errores de permisos
+RUN chown -R mssql:mssql /var/opt/mssql
 
-# Configuración de SQL Server para usar SSL/TLS
-ENV MSSQL_SSL_CERTIFICATE=/etc/ssl/certs/sqlserver.crt
-ENV MSSQL_SSL_KEY=/etc/ssl/private/sqlserver.key
-ENV MSSQL_TCP_PORT=1433
+# Cambia a usuario mssql
+USER mssql
 
 # Expone el puerto SQL Server
 EXPOSE 1433
 
-# Copia el archivo de configuración SQL
-COPY setup.sql /tmp/setup.sql
+# Script de inicio
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Ejecuta SQL Server y aplica el script de configuración tras un pequeño delay
-CMD /opt/mssql/bin/sqlservr & \
-    sleep 30 && \
-    /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$SA_PASSWORD" -i /tmp/setup.sql
+# Usamos el entrypoint.sh para iniciar SQL Server y aplicar el script SQL
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
