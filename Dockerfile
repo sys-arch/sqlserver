@@ -10,11 +10,14 @@ ENV SA_PASSWORD=YourStrongPassword!
 USER root
 RUN apt-get update && \
     apt-get install -y gnupg curl apt-transport-https && \
+    # Agregar claves y repositorio de Microsoft
     curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
-    # Evitar duplicados eliminando msprod.list si ya existe
     rm -f /etc/apt/sources.list.d/msprod.list && \
     echo "deb [arch=amd64,armhf,arm64] https://packages.microsoft.com/ubuntu/20.04/prod focal main" | tee /etc/apt/sources.list.d/msprod.list && \
     apt-get update && \
+    # Eliminar versiones conflictivas de paquetes
+    apt-get remove -y libodbc1 odbcinst1debian2 unixodbc unixodbc-dev && \
+    # Instalar los paquetes necesarios de manera limpia
     apt-get install -y mssql-tools unixodbc-dev && \
     rm -rf /var/lib/apt/lists/* && \
     echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
